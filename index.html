@@ -48,6 +48,20 @@
       75% { transform: scale(1); opacity: 1; }
       100% { opacity: 0; transform: scale(1.1) translateY(-30px); }
     }
+
+    .character-select {
+      display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap; justify-content: center;
+    }
+    .character-btn {
+      width: 120px; height: 140px; border: 4px solid #444; border-radius: 15px;
+      background: rgba(255,255,255,0.1); cursor: pointer; transition: all 0.3s;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 10px;
+    }
+    .character-btn:hover { border-color: #FFD166; transform: scale(1.05); }
+    .character-btn.selected { border-color: #4CAF50; background: rgba(76, 175, 80, 0.2); }
+    .character-btn img { width: 80px; height: 80px; object-fit: contain; }
+    .character-btn.disabled { opacity: 0.3; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -64,12 +78,41 @@
     const wrapper = document.getElementById('gameWrapper');
     const msgBox = document.getElementById('motivation-box');
 
-    // 🧺 CESTAS (MAX Y SAM)
-    const cestaImg = new Image(); cestaImg.src = 'max_cesta.png';
-    let cestaLoaded = false; cestaImg.onload = () => cestaLoaded = true;
+    // 🧺 CESTAS (MAX, SAM, MAMÁ)
+    const characterImages = {
+      max: new Image(),
+      sam: new Image(),
+      mama: new Image()
+    };
+    characterImages.max.src = 'max_cesta.png';
+    characterImages.sam.src = 'sam_cesta.png';
+    characterImages.mama.src = 'mama_cesta.png';
     
-    const samImg = new Image(); samImg.src = 'sam_cesta.png'; // ✅ SEGUNDO JUGADOR
-    let samLoaded = false; samImg.onload = () => samLoaded = true;
+    let charactersLoaded = { max: false, sam: false, mama: false };
+    
+    // ✅ FUNCIÓN PARA CALCULAR DIMENSIONES MANTENIENDO PROPORCIÓN
+    function calculateBasketDimensions() {
+      // Usamos la primera imagen cargada como referencia (731x902)
+      // Proporción: 731/902 ≈ 0.81
+      const targetHeight = 105; // Altura objetivo
+      const aspectRatio = 731 / 902; // Proporción original
+      
+      // Calculamos el ancho manteniendo la proporción
+      const calculatedWidth = Math.round(targetHeight * aspectRatio);
+      
+      // Actualizamos las variables globales
+      window.BASE_BASKET_W = calculatedWidth;
+      window.BASE_BASKET_H = targetHeight;
+      
+      console.log(`Dimensiones ajustadas: ${calculatedWidth}x${targetHeight} (proporción ${aspectRatio.toFixed(2)})`);
+    }
+    
+    characterImages.max.onload = () => { 
+      charactersLoaded.max = true; 
+      calculateBasketDimensions();
+    };
+    characterImages.sam.onload = () => charactersLoaded.sam = true;
+    characterImages.mama.onload = () => charactersLoaded.mama = true;
 
     // 🖼️ PORTADA (OPCIONAL)
     const portadaImg = new Image(); portadaImg.src = 'portada.png';
@@ -150,8 +193,10 @@
 
     // ⚙️ CONFIGURACIÓN JUEGO
     let gameMode = '1p', p1Name = 'Jugador 1', p2Name = 'Jugador 2';
+    let player1Character = 'max';
+    let player2Character = 'sam';
     let basket1X, basket2X;
-    let basketW = 95, basketH = 105;
+    let basketW = 85, basketH = 105; // ✅ Dimensiones ajustadas (85x105 para proporción 731:902)
     const basketOffX = 0, basketOffY = -80;
     let score1 = 0, score2 = 0, sharedScore = 0;
     let lives1 = 5, lives2 = 5, sharedLives = 5;
@@ -169,7 +214,7 @@
     let sizeBoostActive = false;
     let sizeBoostTimer = 0;
     const SIZE_BOOST_DURATION = 480;
-    const BASE_BASKET_W = 95, BASE_BASKET_H = 105;
+    const BASE_BASKET_W = 85, BASE_BASKET_H = 105; // ✅ Ajustado
 
     // 💬 FRASES MOTIVACIONALES
     const phrases = ["¡Genial!", "¡Sigue así!", "¡Imparable!", "¡Brutal!", "¡Qué reflejos!", "¡A por todas!", "¡Tú puedes!", "¡No pares!", "¡Eres un PRO!", "¡Modo Roblox!"];
@@ -234,8 +279,54 @@
     window.showNameInput = function(mode) {
       playSound('click'); gameMode = mode; gameState = 'nameInput';
       const is2p = mode.includes('2p');
-      ui.innerHTML = `<h1>👥 Nombres</h1><div class="input-group"><label>Nombre Jugador 1</label><input type="text" id="name1" value="${p1Name}" maxlength="10"></div>${is2p ? `<div class="input-group"><label>Nombre Jugador 2</label><input type="text" id="name2" value="${p2Name}" maxlength="10"></div>` : ''}<button class="btn btn-start" id="startGameBtn">¡EMPEZAR!</button><p style="color:#FFD166; margin-top:12px; font-size:0.95em; font-weight:bold;">🎯 Atrapa ${targetPerLevel} objetos para pasar de nivel</p>`;
-      document.getElementById('startGameBtn').onclick = () => { p1Name = document.getElementById('name1').value.trim() || 'Jugador 1'; if(is2p) p2Name = document.getElementById('name2').value.trim() || 'Jugador 2'; playSound('click'); startGame(); };
+      
+      if(is2p) {
+        ui.innerHTML = `<h1>👥 Nombres</h1><div class="input-group"><label>Nombre Jugador 1</label><input type="text" id="name1" value="${p1Name}" maxlength="10"></div><div class="input-group"><label>Nombre Jugador 2</label><input type="text" id="name2" value="${p2Name}" maxlength="10"></div><button class="btn btn-start" id="nextBtn">Siguiente ▶</button>`;
+        document.getElementById('nextBtn').onclick = () => {
+          p1Name = document.getElementById('name1').value.trim() || 'Jugador 1';
+          p2Name = document.getElementById('name2').value.trim() || 'Jugador 2';
+          playSound('click');
+          showCharacterSelect(1);
+        };
+      } else {
+        p1Name = 'Jugador 1';
+        player1Character = 'max';
+        playSound('click');
+        startGame();
+      }
+    };
+
+    function showCharacterSelect(playerNum) {
+      gameState = 'characterSelect';
+      const availableChars = ['max', 'sam', 'mama'];
+      
+      if(playerNum === 2) {
+        const idx = availableChars.indexOf(player1Character);
+        if(idx > -1) availableChars.splice(idx, 1);
+      }
+      
+      let charButtons = '';
+      availableChars.forEach(char => {
+        charButtons += `<div class="character-btn" onclick="selectCharacter('${char}', ${playerNum})">
+          <img src="${characterImages[char].src}" alt="${char}">
+        </div>`;
+      });
+      
+      ui.innerHTML = `
+        <h2>${playerNum === 1 ? '👤 Jugador 1' : '👤 Jugador 2'}, elige tu personaje</h2>
+        <div class="character-select">${charButtons}</div>
+      `;
+    }
+
+    window.selectCharacter = function(char, playerNum) {
+      playSound('click');
+      if(playerNum === 1) {
+        player1Character = char;
+        showCharacterSelect(2);
+      } else {
+        player2Character = char;
+        startGame();
+      }
     };
 
     function startGame() {
@@ -306,7 +397,13 @@
         if(gameMode!=='1p' && p.y>=b2.c-p.r && p.y<=b2.c+basketH/2 && p.x>b2.l && p.x<b2.r) caught = true;
         if(caught) {
           if(p.type === 'magnet') { magnetActive = true; magnetTimer = MAGNET_DURATION; playSound('levelup'); }
-          else if(p.type === 'size') { basketW = BASE_BASKET_W * 1.2; basketH = BASE_BASKET_H * 1.2; sizeBoostActive = true; sizeBoostTimer = SIZE_BOOST_DURATION; playSound('levelup'); }
+          else if(p.type === 'size') { 
+            basketW = BASE_BASKET_W * 1.2; 
+            basketH = BASE_BASKET_H * 1.2; 
+            sizeBoostActive = true; 
+            sizeBoostTimer = SIZE_BOOST_DURATION; 
+            playSound('levelup'); 
+          }
           fallingPowerups.splice(i,1); continue;
         }
         if(p.y > basketVisualTop+basketH+20) fallingPowerups.splice(i,1);
@@ -317,7 +414,7 @@
         if(e.y>=b1.c-e.r && e.y<=b1.c+basketH/2) {
           if(gameMode==='1p' && e.x>b1.l && e.x<b1.r) { sharedScore++; caught=true; }
           else if(gameMode==='2p-coop' && ((e.x>b1.l&&e.x<b1.r)||(e.x>b2.l&&e.x<b2.r))) { sharedScore++; caught=true; }
-          else if(gameMode==='2p-vs' && ((e.side===1&&e.x>b1.l&&e.x<b1.r)||(e.side===2&&e.x>b2.l&&e.x<b2.r))) { if(e.side===1) score1++; else score2++; caught=true; }
+          else if(gameMode==='2p-vs' && ((e.side===1&&e.x>b1.l&&e.x<b1.r)||(e.side===2&&e.x>b2.l&&e.x>b2.r))) { if(e.side===1) score1++; else score2++; caught=true; }
         }
         if(caught) {
           playSound('catch'); collectedInLevel++; items.splice(i,1); spawnParticles(e.x, e.y, 8, '#FFD166'); spawnFloatingText(e.x, e.y-20, "+1", "#FFFFFF");
@@ -345,7 +442,14 @@
     }
     window.handleSaveScore = function() { const name = document.getElementById('playerNameInput').value.trim() || 'Anónimo'; addRecord(name, sharedScore); document.getElementById('inputSection').classList.add('hidden'); document.getElementById('leaderboardSection').classList.remove('hidden'); renderLeaderboard(); };
 
-    function drawBasket(x, y, imgRef) { if(imgRef && imgRef.complete) ctx.drawImage(imgRef, x-basketW/2+basketOffX, y+basketOffY, basketW, basketH); else { ctx.fillStyle='#D4A373'; ctx.fillRect(x-basketW/2, y-basketH/2, basketW, basketH); } }
+    function drawBasket(x, y, imgRef) { 
+      if(imgRef && imgRef.complete) {
+        ctx.drawImage(imgRef, x-basketW/2+basketOffX, y+basketOffY, basketW, basketH); 
+      } else { 
+        ctx.fillStyle='#D4A373'; 
+        ctx.fillRect(x-basketW/2, y-basketH/2, basketW, basketH); 
+      } 
+    }
 
     function draw(time = 0) {
       if(gameState === 'gameOver') return;
@@ -360,12 +464,11 @@
       if(gameMode!=='1p' && gameState!=='gameOver') { ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=3; ctx.setLineDash([8,6]); ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height-180); ctx.stroke(); ctx.setLineDash([]); }
       
       const bY = canvas.height-180;
-      // ✅ DIBUJO DE CESTAS: MAX para J1, SAM para J2
       if(gameMode==='1p') {
-        drawBasket(basket1X, bY, cestaImg);
+        drawBasket(basket1X, bY, characterImages.max);
       } else {
-        drawBasket(basket1X, bY, cestaImg);  // Jugador 1: MAX
-        drawBasket(basket2X, bY, samImg);    // Jugador 2: SAM
+        drawBasket(basket1X, bY, characterImages[player1Character]);
+        drawBasket(basket2X, bY, characterImages[player2Character]);
       }
       
       ctx.font='40px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
