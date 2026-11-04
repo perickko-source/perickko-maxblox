@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>MAXLOX - Atrapa Objetos Roblox</title>
+  <title>MaxBlox Cesta Loca</title>
   
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
   <link rel="apple-touch-icon" href="favicon.png">
@@ -20,6 +20,7 @@
     #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(10, 15, 30, 0.92); color: white; text-align: center; padding: 20px; z-index: 10; }
     #ui h1 { font-size: 2em; margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0,0,0,0.6); color: #FFD166; }
     #ui h2 { font-size: 1.3em; margin: 15px 0 10px; color: #E0E0E0; }
+    .subtitle { font-size: 0.9em; color: #B0B0B0; margin-bottom: 20px; font-weight: normal; }
     .btn { padding: 14px 24px; font-size: 1em; border: none; border-radius: 10px; color: white; cursor: pointer; margin: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); font-weight: bold; min-width: 180px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .btn:active { transform: scale(0.96); }
     .btn-mode { background: #0077B6; }
@@ -90,20 +91,12 @@
     
     let charactersLoaded = { max: false, sam: false, mama: false };
     
-    // ✅ FUNCIÓN PARA CALCULAR DIMENSIONES MANTENIENDO PROPORCIÓN
     function calculateBasketDimensions() {
-      // Usamos la primera imagen cargada como referencia (731x902)
-      // Proporción: 731/902 ≈ 0.81
-      const targetHeight = 105; // Altura objetivo
-      const aspectRatio = 731 / 902; // Proporción original
-      
-      // Calculamos el ancho manteniendo la proporción
+      const targetHeight = 105;
+      const aspectRatio = 731 / 902;
       const calculatedWidth = Math.round(targetHeight * aspectRatio);
-      
-      // Actualizamos las variables globales
       window.BASE_BASKET_W = calculatedWidth;
       window.BASE_BASKET_H = targetHeight;
-      
       console.log(`Dimensiones ajustadas: ${calculatedWidth}x${targetHeight} (proporción ${aspectRatio.toFixed(2)})`);
     }
     
@@ -196,7 +189,7 @@
     let player1Character = 'max';
     let player2Character = 'sam';
     let basket1X, basket2X;
-    let basketW = 85, basketH = 105; // ✅ Dimensiones ajustadas (85x105 para proporción 731:902)
+    let basketW = 85, basketH = 105;
     const basketOffX = 0, basketOffY = -80;
     let score1 = 0, score2 = 0, sharedScore = 0;
     let lives1 = 5, lives2 = 5, sharedLives = 5;
@@ -214,7 +207,7 @@
     let sizeBoostActive = false;
     let sizeBoostTimer = 0;
     const SIZE_BOOST_DURATION = 480;
-    const BASE_BASKET_W = 85, BASE_BASKET_H = 105; // ✅ Ajustado
+    const BASE_BASKET_W = 85, BASE_BASKET_H = 105;
 
     // 💬 FRASES MOTIVACIONALES
     const phrases = ["¡Genial!", "¡Sigue así!", "¡Imparable!", "¡Brutal!", "¡Qué reflejos!", "¡A por todas!", "¡Tú puedes!", "¡No pares!", "¡Eres un PRO!", "¡Modo Roblox!"];
@@ -273,7 +266,7 @@
       bgMusic.playbackRate = 1.0; gameState = 'menu'; started = false;
       if(msgTimeout) clearTimeout(msgTimeout); msgBox.classList.remove('pop-animation'); msgBox.innerText = '';
       ui.classList.remove('hidden');
-      ui.innerHTML = `<h1>MAXLOX<br>🎮 Atrapa Objetos Roblox</h1><button class="btn btn-mode" onclick="showNameInput('1p')">👤 1 Jugador</button><button class="btn btn-mode" onclick="showNameInput('2p-coop')">🤝 2 Jugadores Cooperativo</button><button class="btn btn-mode" onclick="showNameInput('2p-vs')">⚔️ 2 Jugadores Competitivo</button>`;
+      ui.innerHTML = `<h1>MaxBlox Cesta Loca</h1><p class="subtitle">🎮 Atrapa Objetos Roblox</p><button class="btn btn-mode" onclick="showNameInput('1p')">👤 1 Jugador</button><button class="btn btn-mode" onclick="showNameInput('2p-coop')">🤝 2 Jugadores Cooperativo</button><button class="btn btn-mode" onclick="showNameInput('2p-vs')">⚔️ 2 Jugadores Competitivo</button>`;
     }
 
     window.showNameInput = function(mode) {
