@@ -97,7 +97,6 @@
       const calculatedWidth = Math.round(targetHeight * aspectRatio);
       window.BASE_BASKET_W = calculatedWidth;
       window.BASE_BASKET_H = targetHeight;
-      console.log(`Dimensiones ajustadas: ${calculatedWidth}x${targetHeight} (proporción ${aspectRatio.toFixed(2)})`);
     }
     
     characterImages.max.onload = () => { 
@@ -107,17 +106,40 @@
     characterImages.sam.onload = () => charactersLoaded.sam = true;
     characterImages.mama.onload = () => charactersLoaded.mama = true;
 
-    // 🖼️ PORTADA (OPCIONAL)
+    // 🖼️ SPRITESHEET DE EXPRESIONES
+    const expresionesImg = new Image();
+    expresionesImg.src = 'expresiones.png';
+    let expresionesLoaded = false;
+    expresionesImg.onload = () => { expresionesLoaded = true; };
+    
+    const EXP_CELLS = 4;
+    const EXP_STRIDE = 400;
+    const EXP_CELL_W = 375;
+    const EXP_CELL_H = 375;
+    const EXP_OFFSET = (EXP_STRIDE - EXP_CELL_W) / 2;
+    const TOTAL_EXPRESSIONS = 16;
+    let currentExpression = 0;
+    let currentLevelMessage = '';
+
+    const levelCompleteMessages = [
+      "¡Nivel Completado! 🎉",
+      "¡Brutal! ¡Siguiente! 🚀",
+      "¡Increíble! 💪",
+      "¡Eres una máquina! ⚡",
+      "¡A por el siguiente! 🎯",
+      "¡Qué crack! 🏆",
+      "¡Imparable! 🔥",
+      "¡Genial! Sigue así 🌟"
+    ];
+
     const portadaImg = new Image(); portadaImg.src = 'portada.png';
     let portadaLoaded = false;
     portadaImg.onload = () => portadaLoaded = true;
     portadaImg.onerror = () => portadaLoaded = false;
 
-    // 🎨 OBJETOS ROBLOX (emojis como placeholder)
     const ROBLOX_ITEMS = ['💰', '📦', '🟥', '🐶', '💎', '⚔️', '🎩', '🏆'];
     const TOTAL_ITEMS = ROBLOX_ITEMS.length;
 
-    // 🧱 BLOQUES FLOTANTES DE FONDO
     let blocks = [];
     function initBlocks() {
       blocks = [];
@@ -152,7 +174,6 @@
       ctx.globalAlpha = 1.0;
     }
 
-    // 🎵 AUDIO
     let audioCtx;
     function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
     function playSound(t) {
@@ -169,7 +190,6 @@
     bgMusic.loop = true; bgMusic.volume = 0.3;
     bgMusic.onerror = () => console.log('Música no encontrada, jugando sin música');
 
-    // 🏆 RÉCORDS
     const STORAGE_KEY = 'maxlox_highscores';
     const MAX_RECORDS = 5;
     function getRecords() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { return []; } }
@@ -184,7 +204,6 @@
       html += '</div>'; container.innerHTML = html;
     }
 
-    // ⚙️ CONFIGURACIÓN JUEGO
     let gameMode = '1p', p1Name = 'Jugador 1', p2Name = 'Jugador 2';
     let player1Character = 'max';
     let player2Character = 'sam';
@@ -199,17 +218,14 @@
     let gameState = 'menu', fallSpeed = 2.0, spawnInterval = 60, confirmBtnRect = null;
     let shakeIntensity = 0;
 
-    // 🧲 IMÁN
     let magnetActive = false, magnetTimer = 0;
     const MAGNET_DURATION = 360, MAGNET_RANGE = 380, MAGNET_FORCE = 6.5;
 
-    // 📏 POWER-UP: CESTA GIGANTE
     let sizeBoostActive = false;
     let sizeBoostTimer = 0;
     const SIZE_BOOST_DURATION = 480;
     const BASE_BASKET_W = 85, BASE_BASKET_H = 105;
 
-    // 💬 FRASES MOTIVACIONALES
     const phrases = ["¡Genial!", "¡Sigue así!", "¡Imparable!", "¡Brutal!", "¡Qué reflejos!", "¡A por todas!", "¡Tú puedes!", "¡No pares!", "¡Eres un PRO!", "¡Modo Roblox!"];
     let msgTimeout = null;
 
@@ -405,14 +421,21 @@
       for(let i=items.length-1; i>=0; i--) {
         let e = items[i]; e.y += e.vy; e.rot += e.rotSpd; let caught = false;
         if(e.y>=b1.c-e.r && e.y<=b1.c+basketH/2) {
+          // ✅ CORREGIDO: Lógica de colisión para todos los modos
           if(gameMode==='1p' && e.x>b1.l && e.x<b1.r) { sharedScore++; caught=true; }
           else if(gameMode==='2p-coop' && ((e.x>b1.l&&e.x<b1.r)||(e.x>b2.l&&e.x<b2.r))) { sharedScore++; caught=true; }
-          else if(gameMode==='2p-vs' && ((e.side===1&&e.x>b1.l&&e.x<b1.r)||(e.side===2&&e.x>b2.l&&e.x>b2.r))) { if(e.side===1) score1++; else score2++; caught=true; }
+          else if(gameMode==='2p-vs' && ((e.side===1&&e.x>b1.l&&e.x<b1.r)||(e.side===2&&e.x>b2.l&&e.x<b2.r))) { if(e.side===1) score1++; else score2++; caught=true; }
         }
         if(caught) {
           playSound('catch'); collectedInLevel++; items.splice(i,1); spawnParticles(e.x, e.y, 8, '#FFD166'); spawnFloatingText(e.x, e.y-20, "+1", "#FFFFFF");
           if(collectedInLevel >= targetPerLevel) {
-            gameState='levelConfirm'; playSound('levelup');
+            currentExpression = Math.floor(Math.random() * TOTAL_EXPRESSIONS);
+            currentLevelMessage = levelCompleteMessages[Math.floor(Math.random() * levelCompleteMessages.length)];
+            gameState='levelConfirm'; 
+            playSound('levelup');
+            if(msgTimeout) clearTimeout(msgTimeout);
+            msgBox.classList.remove('pop-animation');
+            msgBox.innerText = '';
           } continue;
         }
         if(e.y-e.r > basketVisualTop+basketH+15) {
@@ -444,6 +467,30 @@
       } 
     }
 
+    function drawExpression(cx, cy, size) {
+      if(!expresionesLoaded || !expresionesImg.complete) {
+        ctx.fillStyle = '#FFD166';
+        ctx.font = '80px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🎉', cx, cy);
+        return;
+      }
+      
+      const col = currentExpression % EXP_CELLS;
+      const row = Math.floor(currentExpression / EXP_CELLS);
+      const srcX = col * EXP_STRIDE + EXP_OFFSET;
+      const srcY = row * EXP_STRIDE + EXP_OFFSET;
+      
+      ctx.save();
+      ctx.drawImage(
+        expresionesImg,
+        srcX, srcY, EXP_CELL_W, EXP_CELL_H,
+        cx - size/2, cy - size/2, size, size
+      );
+      ctx.restore();
+    }
+
     function draw(time = 0) {
       if(gameState === 'gameOver') return;
       ctx.save();
@@ -454,69 +501,91 @@
       ctx.fillStyle = grad; ctx.fillRect(0,0,canvas.width,canvas.height);
       drawBlocks();
       
-      if(gameMode!=='1p' && gameState!=='gameOver') { ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=3; ctx.setLineDash([8,6]); ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height-180); ctx.stroke(); ctx.setLineDash([]); }
-      
-      const bY = canvas.height-180;
-      if(gameMode==='1p') {
-        drawBasket(basket1X, bY, characterImages.max);
-      } else {
-        drawBasket(basket1X, bY, characterImages[player1Character]);
-        drawBasket(basket2X, bY, characterImages[player2Character]);
-      }
-      
-      ctx.font='40px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      for(let e of items) { 
-        ctx.save(); ctx.translate(e.x,e.y); ctx.rotate(e.rot); 
-        ctx.fillText(ROBLOX_ITEMS[e.itemIdx], 0, 0);
-        ctx.restore();
-      }
-      
-      ctx.font='34px serif';
-      for(let p of fallingPowerups) ctx.fillText(p.type==='magnet'?'🧲': p.type==='size'?'🎁':'❓', p.x, p.y);
-      for(let p of particles) { ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); }
-      ctx.globalAlpha=1.0;
-      for(let t of floatingTexts) { ctx.globalAlpha=t.life; ctx.fillStyle=t.color; ctx.font=`bold ${24*t.scale}px Arial`; ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.strokeText(t.text,t.x,t.y); ctx.fillText(t.text,t.x,t.y); }
-      ctx.globalAlpha=1.0;
-      if(gameState!=='gameOver') {
+      if(gameState === 'playing') {
+        if(gameMode!=='1p') { ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=3; ctx.setLineDash([8,6]); ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height-180); ctx.stroke(); ctx.setLineDash([]); }
+        
+        const bY = canvas.height-180;
+        if(gameMode==='1p') {
+          drawBasket(basket1X, bY, characterImages.max);
+        } else {
+          drawBasket(basket1X, bY, characterImages[player1Character]);
+          drawBasket(basket2X, bY, characterImages[player2Character]);
+        }
+        
+        ctx.font='40px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        for(let e of items) { 
+          ctx.save(); ctx.translate(e.x,e.y); ctx.rotate(e.rot); 
+          ctx.fillText(ROBLOX_ITEMS[e.itemIdx], 0, 0);
+          ctx.restore();
+        }
+        
+        ctx.font='34px serif';
+        for(let p of fallingPowerups) ctx.fillText(p.type==='magnet'?'🧲': p.type==='size'?'🎁':'❓', p.x, p.y);
+        for(let p of particles) { ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); }
+        ctx.globalAlpha=1.0;
+        for(let t of floatingTexts) { ctx.globalAlpha=t.life; ctx.fillStyle=t.color; ctx.font=`bold ${24*t.scale}px Arial`; ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.strokeText(t.text,t.x,t.y); ctx.fillText(t.text,t.x,t.y); }
+        ctx.globalAlpha=1.0;
+        
         ctx.fillStyle='#1D3557'; ctx.font='bold 16px Arial';
         if(gameMode==='1p') { ctx.fillText(`👤 ${p1Name}: ${sharedScore}`,canvas.width/2,25); ctx.fillText('❤️'.repeat(sharedLives),canvas.width/2,48); }
         else if(gameMode==='2p-coop') { ctx.fillText(`🤝 Equipo: ${sharedScore}`,canvas.width/2,25); ctx.fillText('❤️'.repeat(sharedLives),canvas.width/2,48); }
         else { ctx.textAlign='left'; ctx.fillText(`${p1Name}: ${score1}`,10,25); ctx.fillText('❤️'.repeat(lives1),10,45); ctx.textAlign='right'; ctx.fillText(`${p2Name}: ${score2}`,canvas.width-10,25); ctx.fillText('❤️'.repeat(lives2),canvas.width-10,45); }
         ctx.textAlign='center'; ctx.fillStyle='#E9C46A'; ctx.font='bold 20px Arial'; ctx.fillText(`Nivel ${level}`, canvas.width/2, 75);
-      }
-
-      if(sizeBoostActive) {
-        const barW = 100, barH = 12;
-        const bx = canvas.width/2 - barW/2, by = magnetActive ? 125 : 105;
-        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.roundRect(bx-2, by-2, barW+4, barH+4, 8); ctx.fill();
-        ctx.fillStyle = '#FF9800'; ctx.beginPath(); ctx.roundRect(bx, by, (sizeBoostTimer/SIZE_BOOST_DURATION)*barW, barH, 6); ctx.fill();
-        ctx.fillStyle = '#FFF'; ctx.font = 'bold 11px Arial';
-        ctx.fillText('📏 ' + Math.ceil(sizeBoostTimer/60) + 's', canvas.width/2, by + barH/2 + 1);
-      }
-      if(magnetActive) {
-        const barW = 120, barH = 14;
-        const bx = canvas.width/2 - barW/2, by = 105;
-        ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.beginPath(); ctx.roundRect(bx-2,by-2,barW+4,barH+4,8); ctx.fill();
-        ctx.fillStyle = '#00E5FF'; ctx.shadowColor = '#00E5FF'; ctx.shadowBlur = 10; ctx.beginPath(); ctx.roundRect(bx,by,(magnetTimer/MAGNET_DURATION)*barW,barH,6); ctx.fill(); ctx.shadowBlur=0;
-        ctx.fillStyle = '#FFF'; ctx.font = 'bold 12px Arial';
-        ctx.fillText('🧲 ' + Math.ceil(magnetTimer/60) + 's', canvas.width/2, by+barH/2+1);
-      }
-
-      if(gameState!=='gameOver') {
+        
+        if(sizeBoostActive) {
+          const barW = 100, barH = 12;
+          const bx = canvas.width/2 - barW/2, by = magnetActive ? 125 : 105;
+          ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.roundRect(bx-2, by-2, barW+4, barH+4, 8); ctx.fill();
+          ctx.fillStyle = '#FF9800'; ctx.beginPath(); ctx.roundRect(bx, by, (sizeBoostTimer/SIZE_BOOST_DURATION)*barW, barH, 6); ctx.fill();
+          ctx.fillStyle = '#FFF'; ctx.font = 'bold 11px Arial';
+          ctx.fillText('📏 ' + Math.ceil(sizeBoostTimer/60) + 's', canvas.width/2, by + barH/2 + 1);
+        }
+        if(magnetActive) {
+          const barW = 120, barH = 14;
+          const bx = canvas.width/2 - barW/2, by = 105;
+          ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.beginPath(); ctx.roundRect(bx-2,by-2,barW+4,barH+4,8); ctx.fill();
+          ctx.fillStyle = '#00E5FF'; ctx.shadowColor = '#00E5FF'; ctx.shadowBlur = 10; ctx.beginPath(); ctx.roundRect(bx,by,(magnetTimer/MAGNET_DURATION)*barW,barH,6); ctx.fill(); ctx.shadowBlur=0;
+          ctx.fillStyle = '#FFF'; ctx.font = 'bold 12px Arial';
+          ctx.fillText('🧲 ' + Math.ceil(magnetTimer/60) + 's', canvas.width/2, by+barH/2+1);
+        }
+        
         const rem=Math.max(0,targetPerLevel-collectedInLevel), cY=canvas.height-110, boxW=80, boxH=80;
         ctx.fillStyle='rgba(20,30,50,0.6)';
         if(gameMode==='1p'||gameMode==='2p-coop') { ctx.fillRect(canvas.width/2-boxW/2,cY,boxW,boxH); ctx.fillStyle='#FFF'; ctx.font='bold 50px Arial'; ctx.fillText(rem,canvas.width/2,cY+boxH/2); }
         else { ctx.fillRect(canvas.width*0.25-boxW/2,cY,boxW,boxH); ctx.fillRect(canvas.width*0.75-boxW/2,cY,boxW,boxH); ctx.fillStyle='#FFF'; ctx.font='bold 45px Arial'; ctx.fillText(rem,canvas.width*0.25,cY+boxH/2); ctx.fillText(rem,canvas.width*0.75,cY+boxH/2); }
       }
+      
       if(gameState==='levelConfirm') {
-        ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle='#4CAF50'; ctx.font='bold 28px Arial'; ctx.textAlign='center'; ctx.fillText('¡Nivel Completado! 🎉',canvas.width/2,canvas.height/2-90);
-        ctx.fillStyle='#FFD166'; ctx.font='60px Arial'; ctx.fillText('🎮',canvas.width/2,canvas.height/2);
-        ctx.fillStyle='#E0E0E0'; ctx.font='18px Arial'; ctx.fillText(`🎯 Atrapa ${targetPerLevel} objetos para pasar de nivel`, canvas.width/2, canvas.height/2+80);
-        const bw=200, bh=50, btnY=canvas.height/2+120;
+        ctx.fillStyle='rgba(0,0,0,0.85)'; 
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        
+        ctx.fillStyle='#4CAF50'; 
+        ctx.font='bold 28px Arial'; 
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText(currentLevelMessage, canvas.width/2, canvas.height * 0.25);
+        
+        const expSize = 200;
+        const expCenterY = canvas.height * 0.5;
+        drawExpression(canvas.width/2, expCenterY, expSize);
+        
+        ctx.fillStyle='#FFD166'; 
+        ctx.font='bold 24px Arial'; 
+        ctx.fillText(`Nivel ${level} completado`, canvas.width/2, canvas.height * 0.72);
+        
+        ctx.fillStyle='#E0E0E0'; 
+        ctx.font='18px Arial'; 
+        ctx.fillText(`🎯 Atrapa ${targetPerLevel} objetos para el siguiente nivel`, canvas.width/2, canvas.height * 0.78);
+        
+        const bw=220, bh=55, btnY=canvas.height * 0.84;
         confirmBtnRect={x:canvas.width/2-bw/2, y:btnY, w:bw, h:bh};
-        ctx.fillStyle='#E9C46A'; ctx.beginPath(); ctx.roundRect(confirmBtnRect.x,confirmBtnRect.y,confirmBtnRect.w,confirmBtnRect.h,12); ctx.fill();
-        ctx.fillStyle='#1A1A2E'; ctx.font='bold 20px Arial'; ctx.fillText('▶ Siguiente Nivel',canvas.width/2,btnY+bh/2+2);
+        ctx.fillStyle='#E9C46A'; 
+        ctx.beginPath(); 
+        ctx.roundRect(confirmBtnRect.x, confirmBtnRect.y, confirmBtnRect.w, confirmBtnRect.h, 12); 
+        ctx.fill();
+        ctx.fillStyle='#1A1A2E'; 
+        ctx.font='bold 20px Arial'; 
+        ctx.fillText('▶ Siguiente Nivel', canvas.width/2, btnY+bh/2+2);
       }
       ctx.restore();
     }
@@ -548,7 +617,8 @@
     function nextLevel() {
       playSound('level'); level++; collectedInLevel=0;
       fallSpeed += 0.15; spawnInterval = Math.max(30, spawnInterval - 2);
-      items=[]; fallingPowerups=[]; gameState='playing';
+      items=[]; fallingPowerups=[]; particles=[]; floatingTexts=[];
+      gameState='playing';
       scheduleNextMessage();
     }
 
