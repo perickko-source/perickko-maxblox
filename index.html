@@ -79,7 +79,6 @@
     const wrapper = document.getElementById('gameWrapper');
     const msgBox = document.getElementById('motivation-box');
 
-    // 🧺 CESTAS (MAX, SAM, MAMÁ)
     const characterImages = {
       max: new Image(),
       sam: new Image(),
@@ -106,7 +105,6 @@
     characterImages.sam.onload = () => charactersLoaded.sam = true;
     characterImages.mama.onload = () => charactersLoaded.mama = true;
 
-    // 🖼️ SPRITESHEET DE EXPRESIONES
     const expresionesImg = new Image();
     expresionesImg.src = 'expresiones.png';
     let expresionesLoaded = false;
@@ -262,15 +260,29 @@
       startSplashAnimation();
     }
 
+    // ✅ SUBIDO: Loader y barra más arriba (zona de las cestas laterales)
     function startSplashAnimation() {
       const splash = document.createElement('div');
       splash.id = 'splash-screen';
-      splash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:#1a1a2e url('portada.png') no-repeat center center;background-size:cover;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:12vh;z-index:200;transition:opacity 1s ease;`;
+      splash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:#1a1a2e url('portada.png') no-repeat center center;background-size:cover;z-index:200;transition:opacity 1s ease;`;
+      
+      // ✅ "CARGANDO..." subido a 62% (antes 68%)
       const loaderText = document.createElement('div');
-      loaderText.innerText = 'CARGANDO...'; loaderText.style.cssText = `color:#FFD166;font-family:sans-serif;font-weight:bold;font-size:1.2em;margin-bottom:10px;text-shadow:2px 2px 4px #000;letter-spacing:2px;`;
-      const barBg = document.createElement('div'); barBg.style.cssText = `width:80%;max-width:300px;height:8px;background:rgba(255,255,255,0.2);border-radius:4px;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,0.5);`;
-      const bar = document.createElement('div'); bar.style.cssText = `width:0%;height:100%;background:#FFD166;border-radius:4px;transition:width 3s linear;`;
-      barBg.appendChild(bar); splash.appendChild(loaderText); splash.appendChild(barBg); wrapper.appendChild(splash);
+      loaderText.innerText = 'CARGANDO...';
+      loaderText.style.cssText = `position:absolute;top:62%;left:50%;transform:translateX(-50%);color:#FFD166;font-family:sans-serif;font-weight:bold;font-size:1.2em;text-shadow:2px 2px 4px #000;letter-spacing:2px;z-index:201;`;
+      
+      // ✅ Barra subida a 67% (antes 73%)
+      const barBg = document.createElement('div');
+      barBg.style.cssText = `position:absolute;top:67%;left:50%;transform:translateX(-50%);width:80%;max-width:300px;height:8px;background:rgba(255,255,255,0.2);border-radius:4px;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,0.5);z-index:201;`;
+      
+      const bar = document.createElement('div');
+      bar.style.cssText = `width:0%;height:100%;background:#FFD166;border-radius:4px;transition:width 3s linear;`;
+      
+      barBg.appendChild(bar);
+      splash.appendChild(loaderText);
+      splash.appendChild(barBg);
+      wrapper.appendChild(splash);
+      
       const startLoading = () => {
         requestAnimationFrame(() => { bar.style.width = '100%'; });
         setTimeout(() => { splash.style.opacity = '0'; setTimeout(() => { splash.remove(); showMenu(); }, 1000); }, 3000);
@@ -421,7 +433,6 @@
       for(let i=items.length-1; i>=0; i--) {
         let e = items[i]; e.y += e.vy; e.rot += e.rotSpd; let caught = false;
         if(e.y>=b1.c-e.r && e.y<=b1.c+basketH/2) {
-          // ✅ CORREGIDO: Lógica de colisión para todos los modos
           if(gameMode==='1p' && e.x>b1.l && e.x<b1.r) { sharedScore++; caught=true; }
           else if(gameMode==='2p-coop' && ((e.x>b1.l&&e.x<b1.r)||(e.x>b2.l&&e.x<b2.r))) { sharedScore++; caught=true; }
           else if(gameMode==='2p-vs' && ((e.side===1&&e.x>b1.l&&e.x<b1.r)||(e.side===2&&e.x>b2.l&&e.x<b2.r))) { if(e.side===1) score1++; else score2++; caught=true; }
