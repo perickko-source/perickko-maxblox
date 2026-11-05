@@ -135,8 +135,21 @@
     portadaImg.onload = () => portadaLoaded = true;
     portadaImg.onerror = () => portadaLoaded = false;
 
-    const ROBLOX_ITEMS = ['💰', '📦', '🟥', '🐶', '💎', '⚔️', '🎩', '🏆'];
-    const TOTAL_ITEMS = ROBLOX_ITEMS.length;
+    // 🎨 SPRITESHEET DE 8 OBJETOS ROBLOX (4 columnas × 2 filas)
+    const robloxItemsImg = new Image();
+    robloxItemsImg.src = 'roblox-items1.png';
+    let robloxItemsLoaded = false;
+    robloxItemsImg.onload = () => { robloxItemsLoaded = true; };
+    
+    const ROBLOX_COLS = 4;
+    const ROBLOX_ROWS = 2;
+    const ROBLOX_CELL_W = 375;
+    const ROBLOX_CELL_H = 375;
+    const TOTAL_ROBLOX_ITEMS = 8;
+
+    // Nombres de los objetos (para referencia)
+    // 0: Moneda R, 1: Caja regalo, 2: Bloque rojo, 3: Perrito
+    // 4: Diamante, 5: Espada, 6: Sombrero, 7: Trofeo
 
     let blocks = [];
     function initBlocks() {
@@ -260,18 +273,15 @@
       startSplashAnimation();
     }
 
-    // ✅ SUBIDO: Loader y barra más arriba (zona de las cestas laterales)
     function startSplashAnimation() {
       const splash = document.createElement('div');
       splash.id = 'splash-screen';
       splash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:#1a1a2e url('portada.png') no-repeat center center;background-size:cover;z-index:200;transition:opacity 1s ease;`;
       
-      // ✅ "CARGANDO..." subido a 62% (antes 68%)
       const loaderText = document.createElement('div');
       loaderText.innerText = 'CARGANDO...';
       loaderText.style.cssText = `position:absolute;top:62%;left:50%;transform:translateX(-50%);color:#FFD166;font-family:sans-serif;font-weight:bold;font-size:1.2em;text-shadow:2px 2px 4px #000;letter-spacing:2px;z-index:201;`;
       
-      // ✅ Barra subida a 67% (antes 73%)
       const barBg = document.createElement('div');
       barBg.style.cssText = `position:absolute;top:67%;left:50%;transform:translateX(-50%);width:80%;max-width:300px;height:8px;background:rgba(255,255,255,0.2);border-radius:4px;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,0.5);z-index:201;`;
       
@@ -369,7 +379,8 @@
       if(roll < 0.025) { fallingPowerups.push({x: Math.random()*(canvas.width*0.8)+canvas.width*0.1, y:-30, vy: fallSpeed*0.7, type: 'magnet', r: 24}); return; }
       if(roll < 0.045) { fallingPowerups.push({x: Math.random()*(canvas.width*0.8)+canvas.width*0.1, y:-30, vy: fallSpeed*0.7, type: 'size', r: 24}); return; }
       
-      const itemIdx = Math.floor(Math.random()*TOTAL_ITEMS);
+      // ✅ Objeto aleatorio entre los 8 disponibles
+      const itemIdx = Math.floor(Math.random() * TOTAL_ROBLOX_ITEMS);
       let x, vy, side;
       if(gameMode === '1p') { x = Math.random()*(canvas.width*0.6)+canvas.width*0.2; side = 1; }
       else { side = Math.random()<0.5?1:2; x = side===1 ? Math.random()*(canvas.width*0.35)+canvas.width*0.075 : Math.random()*(canvas.width*0.35)+canvas.width*0.575; }
@@ -478,6 +489,32 @@
       } 
     }
 
+    // 🎨 DIBUJAR OBJETO ROBLOX DESDE SPRITESHEET (4x2)
+    function drawRobloxItem(cx, cy, itemIdx, size) {
+      if(!robloxItemsLoaded || !robloxItemsImg.complete) {
+        // Fallback: emoji si la imagen no cargó
+        ctx.font = '40px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💰', cx, cy);
+        return;
+      }
+      
+      // Calcular posición en el spritesheet 4x2
+      const col = itemIdx % ROBLOX_COLS;
+      const row = Math.floor(itemIdx / ROBLOX_COLS);
+      const srcX = col * ROBLOX_CELL_W;
+      const srcY = row * ROBLOX_CELL_H;
+      
+      ctx.save();
+      ctx.drawImage(
+        robloxItemsImg,
+        srcX, srcY, ROBLOX_CELL_W, ROBLOX_CELL_H,
+        cx - size/2, cy - size/2, size, size
+      );
+      ctx.restore();
+    }
+
     function drawExpression(cx, cy, size) {
       if(!expresionesLoaded || !expresionesImg.complete) {
         ctx.fillStyle = '#FFD166';
@@ -523,10 +560,13 @@
           drawBasket(basket2X, bY, characterImages[player2Character]);
         }
         
-        ctx.font='40px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        // ✅ Dibujar los 8 objetos Roblox con rotación
+        const itemSize = 55;
         for(let e of items) { 
-          ctx.save(); ctx.translate(e.x,e.y); ctx.rotate(e.rot); 
-          ctx.fillText(ROBLOX_ITEMS[e.itemIdx], 0, 0);
+          ctx.save(); 
+          ctx.translate(e.x, e.y); 
+          ctx.rotate(e.rot); 
+          drawRobloxItem(0, 0, e.itemIdx, itemSize);
           ctx.restore();
         }
         
