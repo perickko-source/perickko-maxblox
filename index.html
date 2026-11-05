@@ -135,21 +135,21 @@
     portadaImg.onload = () => portadaLoaded = true;
     portadaImg.onerror = () => portadaLoaded = false;
 
-    // 🎨 SPRITESHEET DE 8 OBJETOS ROBLOX (4 columnas × 2 filas)
-    const robloxItemsImg = new Image();
-    robloxItemsImg.src = 'roblox-items1.png';
-    let robloxItemsLoaded = false;
-    robloxItemsImg.onload = () => { robloxItemsLoaded = true; };
+    const robloxItemsImg1 = new Image();
+    robloxItemsImg1.src = 'roblox-items1.png';
+    let robloxItems1Loaded = false;
+    robloxItemsImg1.onload = () => { robloxItems1Loaded = true; };
+
+    const robloxItemsImg2 = new Image();
+    robloxItemsImg2.src = 'roblox-items2.png';
+    let robloxItems2Loaded = false;
+    robloxItemsImg2.onload = () => { robloxItems2Loaded = true; };
     
     const ROBLOX_COLS = 4;
     const ROBLOX_ROWS = 2;
     const ROBLOX_CELL_W = 375;
     const ROBLOX_CELL_H = 375;
     const TOTAL_ROBLOX_ITEMS = 8;
-
-    // Nombres de los objetos (para referencia)
-    // 0: Moneda R, 1: Caja regalo, 2: Bloque rojo, 3: Perrito
-    // 4: Diamante, 5: Espada, 6: Sombrero, 7: Trofeo
 
     let blocks = [];
     function initBlocks() {
@@ -379,13 +379,13 @@
       if(roll < 0.025) { fallingPowerups.push({x: Math.random()*(canvas.width*0.8)+canvas.width*0.1, y:-30, vy: fallSpeed*0.7, type: 'magnet', r: 24}); return; }
       if(roll < 0.045) { fallingPowerups.push({x: Math.random()*(canvas.width*0.8)+canvas.width*0.1, y:-30, vy: fallSpeed*0.7, type: 'size', r: 24}); return; }
       
-      // ✅ Objeto aleatorio entre los 8 disponibles
+      const currentSheet = (level - 1) % 2;
       const itemIdx = Math.floor(Math.random() * TOTAL_ROBLOX_ITEMS);
       let x, vy, side;
       if(gameMode === '1p') { x = Math.random()*(canvas.width*0.6)+canvas.width*0.2; side = 1; }
       else { side = Math.random()<0.5?1:2; x = side===1 ? Math.random()*(canvas.width*0.35)+canvas.width*0.075 : Math.random()*(canvas.width*0.35)+canvas.width*0.575; }
       vy = fallSpeed + Math.random()*0.3;
-      items.push({ x, y: -30, r:20, vy, itemIdx, rot:0, rotSpd:(Math.random()-0.5)*0.05, side });
+      items.push({ x, y: -30, r:20, vy, itemIdx, rot:0, rotSpd:(Math.random()-0.5)*0.05, side, sheet: currentSheet });
     }
 
     function spawnParticles(x, y, count, color) { for(let i=0; i<count; i++) particles.push({x, y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4-2, life:1.0, color, size:Math.random()*4+2}); }
@@ -446,7 +446,7 @@
         if(e.y>=b1.c-e.r && e.y<=b1.c+basketH/2) {
           if(gameMode==='1p' && e.x>b1.l && e.x<b1.r) { sharedScore++; caught=true; }
           else if(gameMode==='2p-coop' && ((e.x>b1.l&&e.x<b1.r)||(e.x>b2.l&&e.x<b2.r))) { sharedScore++; caught=true; }
-          else if(gameMode==='2p-vs' && ((e.side===1&&e.x>b1.l&&e.x<b1.r)||(e.side===2&&e.x>b2.l&&e.x<b2.r))) { if(e.side===1) score1++; else score2++; caught=true; }
+          else if(gameMode==='2p-vs' && ((e.side===1&&e.x>b1.l&&e.x<b1.r)||(e.side===2&&e.x>b2.l&&e.x>b2.r))) { if(e.side===1) score1++; else score2++; caught=true; }
         }
         if(caught) {
           playSound('catch'); collectedInLevel++; items.splice(i,1); spawnParticles(e.x, e.y, 8, '#FFD166'); spawnFloatingText(e.x, e.y-20, "+1", "#FFFFFF");
@@ -489,18 +489,19 @@
       } 
     }
 
-    // 🎨 DIBUJAR OBJETO ROBLOX DESDE SPRITESHEET (4x2)
-    function drawRobloxItem(cx, cy, itemIdx, size) {
-      if(!robloxItemsLoaded || !robloxItemsImg.complete) {
-        // Fallback: emoji si la imagen no cargó
+    function drawRobloxItem(cx, cy, itemIdx, sheet, size) {
+      const img = sheet === 0 ? robloxItemsImg1 : robloxItemsImg2;
+      const loaded = sheet === 0 ? robloxItems1Loaded : robloxItems2Loaded;
+      
+      if(!loaded || !img.complete) {
+        const fallbackEmojis = ['🪙', '🎁', '🟥', '🐶', '💎', '⚔️', '🎩', '🏆'];
         ctx.font = '40px serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('💰', cx, cy);
+        ctx.fillText(fallbackEmojis[itemIdx] || '💰', cx, cy);
         return;
       }
       
-      // Calcular posición en el spritesheet 4x2
       const col = itemIdx % ROBLOX_COLS;
       const row = Math.floor(itemIdx / ROBLOX_COLS);
       const srcX = col * ROBLOX_CELL_W;
@@ -508,7 +509,7 @@
       
       ctx.save();
       ctx.drawImage(
-        robloxItemsImg,
+        img,
         srcX, srcY, ROBLOX_CELL_W, ROBLOX_CELL_H,
         cx - size/2, cy - size/2, size, size
       );
@@ -560,13 +561,12 @@
           drawBasket(basket2X, bY, characterImages[player2Character]);
         }
         
-        // ✅ Dibujar los 8 objetos Roblox con rotación
         const itemSize = 55;
         for(let e of items) { 
           ctx.save(); 
           ctx.translate(e.x, e.y); 
           ctx.rotate(e.rot); 
-          drawRobloxItem(0, 0, e.itemIdx, itemSize);
+          drawRobloxItem(0, 0, e.itemIdx, e.sheet, itemSize);
           ctx.restore();
         }
         
@@ -600,10 +600,27 @@
           ctx.fillText('🧲 ' + Math.ceil(magnetTimer/60) + 's', canvas.width/2, by+barH/2+1);
         }
         
-        const rem=Math.max(0,targetPerLevel-collectedInLevel), cY=canvas.height-110, boxW=80, boxH=80;
+        // ✅ CONTADOR CENTRADO EN LA PARTE INFERIOR
+        const rem=Math.max(0,targetPerLevel-collectedInLevel), cY=canvas.height-95, boxW=80, boxH=80;
         ctx.fillStyle='rgba(20,30,50,0.6)';
-        if(gameMode==='1p'||gameMode==='2p-coop') { ctx.fillRect(canvas.width/2-boxW/2,cY,boxW,boxH); ctx.fillStyle='#FFF'; ctx.font='bold 50px Arial'; ctx.fillText(rem,canvas.width/2,cY+boxH/2); }
-        else { ctx.fillRect(canvas.width*0.25-boxW/2,cY,boxW,boxH); ctx.fillRect(canvas.width*0.75-boxW/2,cY,boxW,boxH); ctx.fillStyle='#FFF'; ctx.font='bold 45px Arial'; ctx.fillText(rem,canvas.width*0.25,cY+boxH/2); ctx.fillText(rem,canvas.width*0.75,cY+boxH/2); }
+        if(gameMode==='1p'||gameMode==='2p-coop') { 
+          ctx.fillRect(canvas.width/2-boxW/2,cY,boxW,boxH); 
+          ctx.fillStyle='#FFF'; 
+          ctx.font='bold 50px Arial'; 
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(rem,canvas.width/2,cY+boxH/2); 
+        }
+        else { 
+          ctx.fillRect(canvas.width*0.25-boxW/2,cY,boxW,boxH); 
+          ctx.fillRect(canvas.width*0.75-boxW/2,cY,boxW,boxH); 
+          ctx.fillStyle='#FFF'; 
+          ctx.font='bold 45px Arial'; 
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(rem,canvas.width*0.25,cY+boxH/2); 
+          ctx.fillText(rem,canvas.width*0.75,cY+boxH/2); 
+        }
       }
       
       if(gameState==='levelConfirm') {
