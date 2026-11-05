@@ -135,6 +135,7 @@
     portadaImg.onload = () => portadaLoaded = true;
     portadaImg.onerror = () => portadaLoaded = false;
 
+    // 🎨 TRES SPRITESHEETS DE OBJETOS ROBLOX
     const robloxItemsImg1 = new Image();
     robloxItemsImg1.src = 'roblox-items1.png';
     let robloxItems1Loaded = false;
@@ -144,6 +145,11 @@
     robloxItemsImg2.src = 'roblox-items2.png';
     let robloxItems2Loaded = false;
     robloxItemsImg2.onload = () => { robloxItems2Loaded = true; };
+
+    const robloxItemsImg3 = new Image();
+    robloxItemsImg3.src = 'roblox-items3.png';
+    let robloxItems3Loaded = false;
+    robloxItemsImg3.onload = () => { robloxItems3Loaded = true; };
     
     const ROBLOX_COLS = 4;
     const ROBLOX_ROWS = 2;
@@ -239,6 +245,10 @@
 
     const phrases = ["¡Genial!", "¡Sigue así!", "¡Imparable!", "¡Brutal!", "¡Qué reflejos!", "¡A por todas!", "¡Tú puedes!", "¡No pares!", "¡Eres un PRO!", "¡Modo Roblox!"];
     let msgTimeout = null;
+
+    function calculateTargetForLevel(lvl) {
+      return 20 + (lvl - 1) * 10;
+    }
 
     function resize() {
       const ratio = 9/16;
@@ -362,6 +372,7 @@
 
     function startGame() {
       score1 = score2 = sharedScore = 0; level = 1; collectedInLevel = 0;
+      targetPerLevel = calculateTargetForLevel(1);
       gameOver = false; started = true; gameState = 'playing';
       basketW = BASE_BASKET_W; basketH = BASE_BASKET_H;
       sizeBoostActive = false; sizeBoostTimer = 0;
@@ -379,7 +390,8 @@
       if(roll < 0.025) { fallingPowerups.push({x: Math.random()*(canvas.width*0.8)+canvas.width*0.1, y:-30, vy: fallSpeed*0.7, type: 'magnet', r: 24}); return; }
       if(roll < 0.045) { fallingPowerups.push({x: Math.random()*(canvas.width*0.8)+canvas.width*0.1, y:-30, vy: fallSpeed*0.7, type: 'size', r: 24}); return; }
       
-      const currentSheet = (level - 1) % 2;
+      // 🔄 Rotación entre 3 hojas: 0, 1, 2, 0, 1, 2...
+      const currentSheet = (level - 1) % 3;
       const itemIdx = Math.floor(Math.random() * TOTAL_ROBLOX_ITEMS);
       let x, vy, side;
       if(gameMode === '1p') { x = Math.random()*(canvas.width*0.6)+canvas.width*0.2; side = 1; }
@@ -489,9 +501,12 @@
       } 
     }
 
+    // 🎨 DIBUJAR OBJETO ROBLOX (soporte para 3 hojas)
     function drawRobloxItem(cx, cy, itemIdx, sheet, size) {
-      const img = sheet === 0 ? robloxItemsImg1 : robloxItemsImg2;
-      const loaded = sheet === 0 ? robloxItems1Loaded : robloxItems2Loaded;
+      let img, loaded;
+      if(sheet === 0) { img = robloxItemsImg1; loaded = robloxItems1Loaded; }
+      else if(sheet === 1) { img = robloxItemsImg2; loaded = robloxItems2Loaded; }
+      else { img = robloxItemsImg3; loaded = robloxItems3Loaded; }
       
       if(!loaded || !img.complete) {
         const fallbackEmojis = ['🪙', '🎁', '🟥', '🐶', '💎', '⚔️', '🎩', '🏆'];
@@ -600,7 +615,6 @@
           ctx.fillText('🧲 ' + Math.ceil(magnetTimer/60) + 's', canvas.width/2, by+barH/2+1);
         }
         
-        // ✅ CONTADOR CENTRADO EN LA PARTE INFERIOR
         const rem=Math.max(0,targetPerLevel-collectedInLevel), cY=canvas.height-95, boxW=80, boxH=80;
         ctx.fillStyle='rgba(20,30,50,0.6)';
         if(gameMode==='1p'||gameMode==='2p-coop') { 
@@ -641,9 +655,10 @@
         ctx.font='bold 24px Arial'; 
         ctx.fillText(`Nivel ${level} completado`, canvas.width/2, canvas.height * 0.72);
         
+        const nextLevelTarget = calculateTargetForLevel(level + 1);
         ctx.fillStyle='#E0E0E0'; 
         ctx.font='18px Arial'; 
-        ctx.fillText(`🎯 Atrapa ${targetPerLevel} objetos para el siguiente nivel`, canvas.width/2, canvas.height * 0.78);
+        ctx.fillText(`🎯 Atrapa ${nextLevelTarget} objetos para el siguiente nivel`, canvas.width/2, canvas.height * 0.78);
         
         const bw=220, bh=55, btnY=canvas.height * 0.84;
         confirmBtnRect={x:canvas.width/2-bw/2, y:btnY, w:bw, h:bh};
@@ -683,9 +698,16 @@
     canvas.addEventListener('mousedown', handleInput);
 
     function nextLevel() {
-      playSound('level'); level++; collectedInLevel=0;
-      fallSpeed += 0.15; spawnInterval = Math.max(30, spawnInterval - 2);
-      items=[]; fallingPowerups=[]; particles=[]; floatingTexts=[];
+      playSound('level'); 
+      level++; 
+      collectedInLevel=0;
+      targetPerLevel = calculateTargetForLevel(level);
+      fallSpeed += 0.15; 
+      spawnInterval = Math.max(30, spawnInterval - 2);
+      items=[]; 
+      fallingPowerups=[]; 
+      particles=[]; 
+      floatingTexts=[];
       gameState='playing';
       scheduleNextMessage();
     }
