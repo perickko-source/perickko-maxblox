@@ -135,14 +135,16 @@
     portadaImg.onload = () => portadaLoaded = true;
     portadaImg.onerror = () => portadaLoaded = false;
 
-    // 🎨 SEIS SPRITESHEETS DE OBJETOS ROBLOX (array para escalabilidad)
+    // 🎨 OCHO SPRITESHEETS DE OBJETOS ROBLOX
     const robloxSheets = [
-      { img: new Image(), loaded: false },
-      { img: new Image(), loaded: false },
-      { img: new Image(), loaded: false },
-      { img: new Image(), loaded: false },
-      { img: new Image(), loaded: false },
-      { img: new Image(), loaded: false }
+      { img: new Image(), loaded: false }, // 0
+      { img: new Image(), loaded: false }, // 1
+      { img: new Image(), loaded: false }, // 2
+      { img: new Image(), loaded: false }, // 3
+      { img: new Image(), loaded: false }, // 4
+      { img: new Image(), loaded: false }, // 5
+      { img: new Image(), loaded: false }, // 6 (NUEVO)
+      { img: new Image(), loaded: false }  // 7 (NUEVO)
     ];
     robloxSheets[0].img.src = 'roblox-items1.png';
     robloxSheets[1].img.src = 'roblox-items2.png';
@@ -150,8 +152,10 @@
     robloxSheets[3].img.src = 'roblox-items4.png';
     robloxSheets[4].img.src = 'roblox-items5.png';
     robloxSheets[5].img.src = 'roblox-items6.png';
+    robloxSheets[6].img.src = 'roblox-items7.png'; // ✅ NUEVO
+    robloxSheets[7].img.src = 'roblox-items8.png'; // ✅ NUEVO
     
-    robloxSheets.forEach((sheet, i) => {
+    robloxSheets.forEach((sheet) => {
       sheet.img.onload = () => { sheet.loaded = true; };
     });
     
@@ -160,7 +164,7 @@
     const ROBLOX_CELL_W = 375;
     const ROBLOX_CELL_H = 375;
     const TOTAL_ROBLOX_ITEMS = 8;
-    const TOTAL_SHEETS = 6; // ✅ Total de hojas disponibles
+    const TOTAL_SHEETS = 8; // ✅ Actualizado a 8
 
     let blocks = [];
     function initBlocks() {
@@ -395,7 +399,7 @@
       if(roll < 0.025) { fallingPowerups.push({x: Math.random()*(canvas.width*0.8)+canvas.width*0.1, y:-30, vy: fallSpeed*0.7, type: 'magnet', r: 24}); return; }
       if(roll < 0.045) { fallingPowerups.push({x: Math.random()*(canvas.width*0.8)+canvas.width*0.1, y:-30, vy: fallSpeed*0.7, type: 'size', r: 24}); return; }
       
-      // 🔄 Rotación entre 6 hojas: 0, 1, 2, 3, 4, 5, 0, 1, 2...
+      // 🔄 Rotación entre 8 hojas: 0, 1, 2, 3, 4, 5, 6, 7, 0, 1...
       const currentSheet = (level - 1) % TOTAL_SHEETS;
       const itemIdx = Math.floor(Math.random() * TOTAL_ROBLOX_ITEMS);
       let x, vy, side;
