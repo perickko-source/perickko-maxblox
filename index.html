@@ -135,27 +135,32 @@
     portadaImg.onload = () => portadaLoaded = true;
     portadaImg.onerror = () => portadaLoaded = false;
 
-    // 🎨 TRES SPRITESHEETS DE OBJETOS ROBLOX
-    const robloxItemsImg1 = new Image();
-    robloxItemsImg1.src = 'roblox-items1.png';
-    let robloxItems1Loaded = false;
-    robloxItemsImg1.onload = () => { robloxItems1Loaded = true; };
-
-    const robloxItemsImg2 = new Image();
-    robloxItemsImg2.src = 'roblox-items2.png';
-    let robloxItems2Loaded = false;
-    robloxItemsImg2.onload = () => { robloxItems2Loaded = true; };
-
-    const robloxItemsImg3 = new Image();
-    robloxItemsImg3.src = 'roblox-items3.png';
-    let robloxItems3Loaded = false;
-    robloxItemsImg3.onload = () => { robloxItems3Loaded = true; };
+    // 🎨 SEIS SPRITESHEETS DE OBJETOS ROBLOX (array para escalabilidad)
+    const robloxSheets = [
+      { img: new Image(), loaded: false },
+      { img: new Image(), loaded: false },
+      { img: new Image(), loaded: false },
+      { img: new Image(), loaded: false },
+      { img: new Image(), loaded: false },
+      { img: new Image(), loaded: false }
+    ];
+    robloxSheets[0].img.src = 'roblox-items1.png';
+    robloxSheets[1].img.src = 'roblox-items2.png';
+    robloxSheets[2].img.src = 'roblox-items3.png';
+    robloxSheets[3].img.src = 'roblox-items4.png';
+    robloxSheets[4].img.src = 'roblox-items5.png';
+    robloxSheets[5].img.src = 'roblox-items6.png';
+    
+    robloxSheets.forEach((sheet, i) => {
+      sheet.img.onload = () => { sheet.loaded = true; };
+    });
     
     const ROBLOX_COLS = 4;
     const ROBLOX_ROWS = 2;
     const ROBLOX_CELL_W = 375;
     const ROBLOX_CELL_H = 375;
     const TOTAL_ROBLOX_ITEMS = 8;
+    const TOTAL_SHEETS = 6; // ✅ Total de hojas disponibles
 
     let blocks = [];
     function initBlocks() {
@@ -390,8 +395,8 @@
       if(roll < 0.025) { fallingPowerups.push({x: Math.random()*(canvas.width*0.8)+canvas.width*0.1, y:-30, vy: fallSpeed*0.7, type: 'magnet', r: 24}); return; }
       if(roll < 0.045) { fallingPowerups.push({x: Math.random()*(canvas.width*0.8)+canvas.width*0.1, y:-30, vy: fallSpeed*0.7, type: 'size', r: 24}); return; }
       
-      // 🔄 Rotación entre 3 hojas: 0, 1, 2, 0, 1, 2...
-      const currentSheet = (level - 1) % 3;
+      // 🔄 Rotación entre 6 hojas: 0, 1, 2, 3, 4, 5, 0, 1, 2...
+      const currentSheet = (level - 1) % TOTAL_SHEETS;
       const itemIdx = Math.floor(Math.random() * TOTAL_ROBLOX_ITEMS);
       let x, vy, side;
       if(gameMode === '1p') { x = Math.random()*(canvas.width*0.6)+canvas.width*0.2; side = 1; }
@@ -501,14 +506,11 @@
       } 
     }
 
-    // 🎨 DIBUJAR OBJETO ROBLOX (soporte para 3 hojas)
+    // 🎨 DIBUJAR OBJETO ROBLOX (soporte para N hojas usando array)
     function drawRobloxItem(cx, cy, itemIdx, sheet, size) {
-      let img, loaded;
-      if(sheet === 0) { img = robloxItemsImg1; loaded = robloxItems1Loaded; }
-      else if(sheet === 1) { img = robloxItemsImg2; loaded = robloxItems2Loaded; }
-      else { img = robloxItemsImg3; loaded = robloxItems3Loaded; }
+      const s = robloxSheets[sheet];
       
-      if(!loaded || !img.complete) {
+      if(!s.loaded || !s.img.complete) {
         const fallbackEmojis = ['🪙', '🎁', '🟥', '🐶', '💎', '⚔️', '🎩', '🏆'];
         ctx.font = '40px serif';
         ctx.textAlign = 'center';
@@ -524,7 +526,7 @@
       
       ctx.save();
       ctx.drawImage(
-        img,
+        s.img,
         srcX, srcY, ROBLOX_CELL_W, ROBLOX_CELL_H,
         cx - size/2, cy - size/2, size, size
       );
